@@ -4,6 +4,7 @@ const app:Application = express();
 import cookieParser from "cookie-parser";
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
+import { rootRouter } from "./app/routes";
 
 // Middleware
 app.use(cors());
@@ -17,6 +18,9 @@ app.get("/", (req: Request, res: Response) => {
     Date: new Date(),
   });
 });
+
+app.use("/api/v1",rootRouter)
+
 
 app.use(globalErrorHandler)
 app.use(notFound)

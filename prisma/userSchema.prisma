@@ -13,6 +13,6 @@ model User {
 }
 
 enum ERole {
-    Admin
-    User
+    Business_Admin
+    System_Admin
 }

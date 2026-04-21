@@ -13,7 +13,7 @@ const registerUserZodSchema = z.object({
         email: z.string({ message: "Email is required" }).email("Invalid email"),
         password: z.string({ message: "Password is required" }).min(6, "Password must be at least 6 characters"),
         contactNo: z.string({ message: "Contact number is required" }),
-        role: z.enum(["Admin", "User"]).optional(),
+        role: z.enum(["System_Admin", "Business_Admin"]).optional(),
     }),
 });
 

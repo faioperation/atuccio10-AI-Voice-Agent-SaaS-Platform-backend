@@ -8,8 +8,20 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  name     String?
-  password String
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      ERole    @default(System_Admin)
+  password  String
+  contactNo String
+  photo     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isBlocked Boolean  @default(false)
+}
+
+enum ERole {
+  Business_Admin
+  System_Admin
 }

@@ -23,6 +23,12 @@ CSRF_TRUSTED_ORIGINS = [
     "https://atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
     "http://localhost:3000",
 ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://test21.fireai.agency",
+    "https://charissa-intuitable-corroboratorily.ngrok-free.dev",
+    "https://atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
+]
 
 ALLOWED_HOSTS = [
     "test21.fireai.agency",
@@ -44,9 +50,9 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_yasg",
     "debug_toolbar",
+    "corsheaders",
 ]
 
-# Custom Apps
 CUSTOM_APPS = [
     "apps.accounts",
     "apps.system_admin",
@@ -86,6 +92,7 @@ SIMPLE_JWT = {
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

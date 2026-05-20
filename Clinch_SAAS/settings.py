@@ -20,12 +20,16 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 CSRF_TRUSTED_ORIGINS = [
     "https://test21.fireai.agency",
     "https://charissa-intuitable-corroboratorily.ngrok-free.dev",
+    "https://atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
+    "http://localhost:3000",
 ]
 
 ALLOWED_HOSTS = [
     "test21.fireai.agency",
     "127.0.0.1",
+    "localhost",
     "charissa-intuitable-corroboratorily.ngrok-free.dev",
+    "atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
 ]
 
 INSTALLED_APPS = [

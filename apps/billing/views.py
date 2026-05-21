@@ -2,7 +2,7 @@ import logging
 import stripe
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
@@ -120,7 +120,11 @@ class SubscribeView(APIView):
             id=serializer.validated_data["plan_price_id"]
         )
         base_url = request.build_absolute_uri("/")[:-1]
-        success_url = base_url + reverse("billing-payment-success") + "?session_id={CHECKOUT_SESSION_ID}"
+        success_url = (
+            base_url
+            + reverse("billing-payment-success")
+            + "?session_id={CHECKOUT_SESSION_ID}"
+        )
         cancel_url = serializer.validated_data["cancel_url"]
 
         result = SubscriptionService.create_checkout(
@@ -128,19 +132,29 @@ class SubscribeView(APIView):
         )
 
         if "error" in result:
-            http_status = status.HTTP_502_BAD_GATEWAY if result["error"] == "stripe_error" else status.HTTP_400_BAD_REQUEST
-            return Response({"detail": result["detail"], **{k: v for k, v in result.items() if k not in ("error", "detail")}}, status=http_status)
+            http_status = (
+                status.HTTP_502_BAD_GATEWAY
+                if result["error"] == "stripe_error"
+                else status.HTTP_400_BAD_REQUEST
+            )
+            return Response(
+                {
+                    "detail": result["detail"],
+                    **{k: v for k, v in result.items() if k not in ("error", "detail")},
+                },
+                status=http_status,
+            )
 
         return Response(result, status=status.HTTP_200_OK)
 
 
-# ─── Success & Invoice Views (HTML) ───────────────────────────────────────────
+# ─── Success & Invoice Views ──────────────────────────────────────────────────
 
 
 class PaymentSuccessView(APIView):
     """
-    Renders the beautiful success page after payment.
-    URL: /api/billing/success/
+    Returns payment success data as JSON for the frontend to render.
+    URL: /api/billing/success/?session_id=<cs_...>
     """
 
     permission_classes = [AllowAny]
@@ -148,21 +162,32 @@ class PaymentSuccessView(APIView):
     @swagger_auto_schema(**schemas.payment_success_schema)
     def get(self, request):
         session_id = request.GET.get("session_id")
-        invoice_obj, stripe_invoice_url = SubscriptionService.resolve_payment_success(session_id, request.user)
-        return render(
-            request,
-            "billing/success.html",
+        invoice_obj, stripe_invoice_url = SubscriptionService.resolve_payment_success(
+            session_id, request.user
+        )
+
+        if invoice_obj:
+            invoice_data = InvoiceSerializer(invoice_obj).data
+        else:
+            invoice_data = None
+
+        return Response(
             {
                 "session_id": session_id,
-                "invoice_id": invoice_obj.id if invoice_obj else None,
-                "stripe_invoice_url": stripe_invoice_url,
+                "invoice": invoice_data,
+                "stripe_invoice_url": (
+                    invoice_obj.stripe_invoice_url
+                    if invoice_obj
+                    else stripe_invoice_url
+                ),
             },
+            status=status.HTTP_200_OK,
         )
 
 
 class InvoiceDownloadView(APIView):
     """
-    Renders/Downloads a premium invoice.
+    Returns full invoice data as JSON for frontend PDF generation.
     URL: /api/billing/invoices/<id>/download/
     """
 
@@ -170,26 +195,49 @@ class InvoiceDownloadView(APIView):
 
     @swagger_auto_schema(**schemas.invoice_download_schema)
     def get(self, request, pk):
+        from django.contrib.auth import get_user_model
+
         invoice = get_object_or_404(
-            Invoice.objects.select_related("business", "subscription"),
+            Invoice.objects.select_related(
+                "business", "subscription__plan_price__plan"
+            ),
             pk=pk,
             business=request.user.business,
         )
-        # Business.owner_id is a plain UUIDField (not FK), fetch owner email separately
-        from django.contrib.auth import get_user_model
 
-        owner_email = None
+        # Fetch owner from invoice.business.owner_id (plain UUID, not FK)
+        owner = None
         if invoice.business.owner_id:
-            owner_email = (
+            owner = (
                 get_user_model()
                 .objects.filter(pk=invoice.business.owner_id)
-                .values_list("email", flat=True)
+                .values("name", "email")
                 .first()
             )
-        return render(
-            request,
-            "billing/invoice.html",
-            {"invoice": invoice, "owner_email": owner_email},
+
+        return Response(
+            {
+                "invoice": {
+                    "id": invoice.id,
+                    "stripe_invoice_id": invoice.stripe_invoice_id,
+                    "stripe_invoice_url": invoice.stripe_invoice_url,
+                    "amount": str(invoice.amount),
+                    "currency": invoice.currency.upper(),
+                    "status": invoice.status,
+                    "paid_at": invoice.paid_at,
+                    "plan_expiry_date": invoice.subscription.current_period_end if invoice.subscription else None,
+                    "created_at": invoice.created_at,
+                    "snapshot_plan_name": invoice.snapshot_plan_name,
+                    "snapshot_billing_cycle": invoice.snapshot_billing_cycle,
+                    "snapshot_price": str(invoice.snapshot_price),
+                },
+                "user": {
+                    "name": owner["name"] if owner else None,
+                    "email": owner["email"] if owner else None,
+                    "business_name": invoice.snapshot_business_name,
+                },
+            },
+            status=status.HTTP_200_OK,
         )
 
 
@@ -213,7 +261,11 @@ class SwitchPlanView(APIView):
         result = SubscriptionService.switch_plan(request.user.business, new_plan_price)
 
         if "error" in result:
-            http_status = status.HTTP_502_BAD_GATEWAY if result["error"] == "stripe_error" else status.HTTP_400_BAD_REQUEST
+            http_status = (
+                status.HTTP_502_BAD_GATEWAY
+                if result["error"] == "stripe_error"
+                else status.HTTP_400_BAD_REQUEST
+            )
             return Response({"detail": result["detail"]}, status=http_status)
 
         return Response(
@@ -271,10 +323,17 @@ class CancelSubscriptionView(APIView):
         )
 
         if "error" in result:
-            http_status = status.HTTP_502_BAD_GATEWAY if result["error"] == "stripe_error" else status.HTTP_400_BAD_REQUEST
+            http_status = (
+                status.HTTP_502_BAD_GATEWAY
+                if result["error"] == "stripe_error"
+                else status.HTTP_400_BAD_REQUEST
+            )
             return Response({"detail": result["detail"]}, status=http_status)
 
-        return Response({"detail": "Subscription cancelled successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Subscription cancelled successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class MyInvoiceListView(generics.ListAPIView):

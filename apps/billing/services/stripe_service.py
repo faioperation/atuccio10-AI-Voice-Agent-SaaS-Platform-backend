@@ -338,6 +338,7 @@ class StripeService:
                 "currency": _get(stripe_invoice, "currency", "usd"),
                 "status": InvoiceStatus.PAID,
                 "paid_at": timezone.now(),
+                "stripe_invoice_url": _get(stripe_invoice, "hosted_invoice_url"),
                 "snapshot_business_name": sub.business.name,
                 "snapshot_plan_name": sub.plan_price.plan.name,
                 "snapshot_billing_cycle": sub.plan_price.billing_cycle,

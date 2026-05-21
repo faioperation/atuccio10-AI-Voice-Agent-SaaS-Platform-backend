@@ -156,6 +156,7 @@ class Invoice(models.Model):
     stripe_invoice_id = models.CharField(
         max_length=255, blank=True, null=True, unique=True
     )
+    stripe_invoice_url = models.URLField(max_length=1024, blank=True, null=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
 
     # Financials

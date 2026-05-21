@@ -46,7 +46,7 @@ urlpatterns = [
     path("invoices/", MyInvoiceListView.as_view(), name="billing-invoice-list"),
     path("success/", PaymentSuccessView.as_view(), name="billing-payment-success"),
     path(
-        "invoices/<int:pk>/download/",
+        "invoices/<int:pk>/",
         InvoiceDownloadView.as_view(),
         name="billing-invoice-download",
     ),

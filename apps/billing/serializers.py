@@ -218,6 +218,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "stripe_invoice_id",
+            "stripe_invoice_url",
             "amount",
             "currency",
             "status",

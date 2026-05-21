@@ -1,71 +1,166 @@
 <!DOCTYPE html>
 <html>
-  <body style="margin:0; padding:0; background:#f4f4f4; font-family: Arial, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4; padding:20px 0;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+
+  <body style="
+  margin:0;
+  padding:0;
+  background:#f4f7fb;
+  font-family:Arial,sans-serif;
+">
+    <table width="100%" cellpadding="0" cellspacing="0" style="
+  background:#f4f7fb;
+  padding:40px 15px;
+">
       <tr>
         <td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; padding:30px;">
-            <!-- Logo -->
+          <!-- Main Card -->
+          <table width="600" cellpadding="0" cellspacing="0" style="
+  width:100%;
+  max-width:600px;
+  background:#ffffff;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 10px 35px rgba(15,23,42,0.08);
+">
+            <!-- Header -->
             <tr>
-              <td align="center" style="padding-bottom:20px;">
-                <div class="logo">
-                  <div style="font-weight: bold; font-size: 24px; color: #333; margin-top: 10px;">Clinch</div>
-                  <div style="font-size: 10px; color: #999; letter-spacing: 2px; text-transform: uppercase;">AI Voice Agent</div>
+              <td align="center" style="
+      background:linear-gradient(135deg,#4a90e2,#6366f1);
+      padding:50px 30px;
+    ">
+                <!-- Brand -->
+                <div style="
+        font-size:34px;
+        font-weight:700;
+        color:#ffffff;
+        margin-top:18px;
+      ">Clinch</div>
+
+                <div style="
+        margin-top:8px;
+        font-size:12px;
+        color:rgba(255,255,255,0.85);
+        letter-spacing:3px;
+        text-transform:uppercase;
+      ">AI Voice Agent</div>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:50px 40px 20px 40px;">
+                <!-- Greeting -->
+                <div style="
+        font-size:30px;
+        font-weight:700;
+        color:#0f172a;
+        margin-bottom:18px;
+      ">Hi {{ user_name }},</div>
+
+                <!-- Message -->
+                <div style="
+        font-size:16px;
+        line-height:1.8;
+        color:#64748b;
+      ">
+                  Use the verification code below to securely access your account. This code will expire in
+                  <span style="color:#4a90e2;font-weight:700;">5 minutes</span>.
                 </div>
-              </td>
-            </tr>
 
-            <!-- Title -->
-            <tr>
-              <td style="font-size:22px; color:#333; padding-bottom:10px;">Hi {{ user_name }},</td>
-            </tr>
-
-            <!-- Content -->
-            <tr>
-              <td style="font-size:15px; color:#666; line-height:1.6;">
-                Here is your One Time Password (OTP).<br />
-                Please enter this code to verify your email address.
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:30px 0;">
-                <table cellpadding="0" cellspacing="0">
+                <!-- OTP Section -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:38px;">
                   <tr>
-                    {% for digit in otp_digits %}
-                      <td style="padding:0 5px;">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td style="background:#f0f4ff; font-size:28px; font-weight:bold; padding:12px 18px; border-radius:6px; text-align:center;">{{ digit }}</td>
-                          </tr>
-                        </table>
-                      </td>
-                    {% endfor %}
+                    <td align="center">
+                      <!-- OTP Box -->
+                      <table cellpadding="0" cellspacing="0" style="
+              background:linear-gradient(145deg,#ffffff,#eef4ff);
+              border:1px solid #dbe7ff;
+              border-radius:20px;
+              box-shadow:
+                0 6px 18px rgba(74,144,226,0.08);
+            ">
+                        <tr>
+                          <td style="
+                  padding:22px 34px;
+                  font-size:40px;
+                  font-weight:800;
+                  color:#1e293b;
+                  letter-spacing:8px;
+                  text-align:center;
+                ">{{ otp }}</td>
+                        </tr>
+                      </table>
+
+                      <!-- Expire -->
+                      <div style="
+              margin-top:18px;
+              font-size:13px;
+              color:#94a3b8;
+            ">This code expires in 5 minutes</div>
+                    </td>
                   </tr>
                 </table>
-              </td>
-            </tr>
-            <!-- Expiry -->
-            <tr>
-              <td style="font-size:13px; color:#999;">
-                OTP will expire in <b>5 minutes</b>.
+
+                <!-- Security Box -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="
+        margin-top:40px;
+        background:#f8fafc;
+        border:1px solid #eef2f7;
+        border-radius:16px;
+      ">
+                  <tr>
+                    <td style="
+            padding:18px 20px;
+            font-size:14px;
+            line-height:1.7;
+            color:#64748b;
+          ">🔒 Never share your OTP with anyone. Clinch will never ask for your verification code.</td>
+                  </tr>
+                </table>
               </td>
             </tr>
 
             <!-- Footer -->
             <tr>
-              <td style="padding-top:30px; font-size:14px; color:#666;">
-                Best Regards,<br />
-                <b style="color:#4a90e2;">Clinch</b> team.
-              </td>
-            </tr>
+              <td style="padding:35px 40px;">
+                <div style="
+        font-size:15px;
+        color:#475569;
+        line-height:1.8;
+      ">
+                  Best Regards,<br />
+                  <span style="
+          color:#4a90e2;
+          font-weight:700;
+        ">Clinch Team</span>
+                </div>
 
-            <tr>
-              <td style="padding-top:30px; border-top:1px solid #eee; text-align:center; font-size:12px; color:#999;">© 2026 Clinch. All rights reserved.</td>
+                <!-- Divider -->
+                <div style="
+        margin:28px 0 22px 0;
+        height:1px;
+        background:#eef2f7;
+      "></div>
+
+                <!-- Footer Bottom -->
+                <div style="
+        text-align:center;
+        font-size:12px;
+        color:#94a3b8;
+        line-height:1.8;
+      ">
+                  © 2026 Clinch. All rights reserved.<br />
+                  Secure authentication powered by Clinch AI
+                </div>
+              </td>
             </tr>
           </table>
         </td>
       </tr>
     </table>
   </body>
-</html>
+</html>```

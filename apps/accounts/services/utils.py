@@ -92,11 +92,9 @@ def send_otp_email(user, code, otp_type):
     elif otp_type == OTPCode.OTPType.PASSWORD_RESET:
         subject = "Reset your password - Clinch SAAS"
 
-    otp_digits = list(code)
-
     context = {
         "user_name": user.name,
-        "otp_digits": otp_digits,
+        "otp": code,
     }
 
     html_content = render_to_string("accounts/emails/otp_email.html", context)

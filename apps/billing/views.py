@@ -181,6 +181,41 @@ class PaymentSuccessView(APIView):
         )
 
 
+class VerifySessionView(APIView):
+    """
+    POST /api/billing/verify-session/
+    Frontend calls this after Stripe redirect with { session_id }.
+    Returns invoice + subscription data.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        session_id = request.data.get("session_id")
+        if not session_id:
+            return Response({"detail": "session_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        invoice_obj, stripe_invoice_url = SubscriptionService.resolve_payment_success(
+            session_id, request.user
+        )
+
+        if invoice_obj:
+            invoice_data = InvoiceSerializer(invoice_obj).data
+        else:
+            invoice_data = None
+
+        return Response(
+            {
+                "session_id": session_id,
+                "invoice": invoice_data,
+                "stripe_invoice_url": (
+                    invoice_obj.stripe_invoice_url if invoice_obj else stripe_invoice_url
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class InvoiceDownloadView(APIView):
     """
     Returns full invoice data as JSON for frontend PDF generation.

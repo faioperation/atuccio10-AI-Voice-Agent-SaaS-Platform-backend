@@ -11,6 +11,7 @@ from apps.billing.views import (
     CancelSubscriptionView,
     MyInvoiceListView,
     PaymentSuccessView,
+    VerifySessionView,
     InvoiceDownloadView,
     StripeWebhookView,
 )
@@ -45,6 +46,7 @@ urlpatterns = [
     ),
     path("invoices/", MyInvoiceListView.as_view(), name="billing-invoice-list"),
     path("success/", PaymentSuccessView.as_view(), name="billing-payment-success"),
+    path("verify-session/", VerifySessionView.as_view(), name="billing-verify-session"),
     path(
         "invoices/<int:pk>/",
         InvoiceDownloadView.as_view(),

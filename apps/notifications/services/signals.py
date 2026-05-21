@@ -168,6 +168,8 @@ def on_subscription_activated(sender, instance, created, **kwargs):
             "billing_cycle": instance.plan_price.billing_cycle,
         },
     )
+    from apps.billing.services.email_service import send_plan_welcome_email
+    send_plan_welcome_email(instance)
 
 
 # ─── Lead signal (uncomment when crm_integration.Lead model is created) ───────

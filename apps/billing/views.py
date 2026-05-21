@@ -190,19 +190,14 @@ class VerifySessionView(APIView):
 
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        session_id = request.data.get("session_id")
+    def _resolve(self, request, session_id):
         if not session_id:
             return Response({"detail": "session_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         invoice_obj, stripe_invoice_url = SubscriptionService.resolve_payment_success(
             session_id, request.user
         )
-
-        if invoice_obj:
-            invoice_data = InvoiceSerializer(invoice_obj).data
-        else:
-            invoice_data = None
+        invoice_data = InvoiceSerializer(invoice_obj).data if invoice_obj else None
 
         return Response(
             {
@@ -214,6 +209,12 @@ class VerifySessionView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    def get(self, request):
+        return self._resolve(request, request.GET.get("session_id"))
+
+    def post(self, request):
+        return self._resolve(request, request.data.get("session_id"))
 
 
 class InvoiceDownloadView(APIView):

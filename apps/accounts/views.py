@@ -253,9 +253,18 @@ class LogoutView(APIView):
 
     @swagger_auto_schema(**schemas.logout_schema)
     def post(self, request):
+        jwt = settings.SIMPLE_JWT
         response = Response({"message": "Logout successful"})
-        response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE"])
-        response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE_REFRESH"])
+        response.delete_cookie(
+            jwt["AUTH_COOKIE"],
+            path=jwt["AUTH_COOKIE_PATH"],
+            samesite=jwt["AUTH_COOKIE_SAMESITE"],
+        )
+        response.delete_cookie(
+            jwt["AUTH_COOKIE_REFRESH"],
+            path=jwt["AUTH_COOKIE_PATH"],
+            samesite=jwt["AUTH_COOKIE_SAMESITE"],
+        )
         return response
 
 

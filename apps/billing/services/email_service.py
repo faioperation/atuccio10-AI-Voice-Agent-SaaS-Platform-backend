@@ -12,9 +12,14 @@ def send_plan_welcome_email(subscription):
     business = subscription.business
     plan_price = subscription.plan_price
 
-    # Find the business admin user
+    # Find the business admin user via business.users → user_roles
     try:
-        user_role = business.user_roles.select_related("user").get(role__name="business_admin")
+        from apps.accounts.models import UserRole
+        user_role = (
+            UserRole.objects
+            .select_related("user")
+            .get(user__business=business, role__name="business_admin")
+        )
         user = user_role.user
     except Exception:
         logger.warning("send_plan_welcome_email: no business_admin found for business %s", business.id)

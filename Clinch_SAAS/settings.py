@@ -10,33 +10,12 @@ SECRET_KEY = config("SECRET_KEY")
 
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-# ALLOWED_HOSTS = config(
-#     "ALLOWED_HOSTS",
-#     default="",
-#     cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
-# )
+def _csv(val):
+    return [s.strip() for s in val.split(",") if s.strip()]
 
-# ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = [
-    "https://test21.fireai.agency",
-    "https://charissa-intuitable-corroboratorily.ngrok-free.dev",
-    "https://atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
-    "http://localhost:3000",
-]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://test21.fireai.agency",
-    "https://charissa-intuitable-corroboratorily.ngrok-free.dev",
-    "https://atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
-]
-
-ALLOWED_HOSTS = [
-    "test21.fireai.agency",
-    "127.0.0.1",
-    "localhost",
-    "charissa-intuitable-corroboratorily.ngrok-free.dev",
-    "atuccio10-ai-voice-agent-saa-s-plat.vercel.app",
-]
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=_csv)
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000", cast=_csv)
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="http://localhost:3000", cast=_csv)
 
 INSTALLED_APPS = [
     "django.contrib.admin",

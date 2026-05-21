@@ -65,6 +65,12 @@ class VerifyEmailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        if user.is_verified:
+            return Response(
+                {"error": "Email already verified", "code": "already_verified"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         otp_obj = OTPCode.objects.filter(
             user=user,
             code=otp,
@@ -106,10 +112,12 @@ class ResendOTPView(APIView):
             )
 
         if user.is_verified and otp_type == OTPCode.OTPType.EMAIL_VERIFY:
-            otp_type = OTPCode.OTPType.PASSWORD_RESET
-            message = "User already verified. Password reset OTP sent instead."
-        else:
-            message = "OTP sent successfully!"
+            return Response(
+                {"error": "Email already verified", "code": "already_verified"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        message = "OTP sent successfully!"
 
         allowed, wait_time = utils.check_otp_rate_limit(user)
         if not allowed:

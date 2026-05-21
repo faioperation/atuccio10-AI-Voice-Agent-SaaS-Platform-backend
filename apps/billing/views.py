@@ -3,7 +3,6 @@ import stripe
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.urls import reverse
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -119,13 +118,10 @@ class SubscribeView(APIView):
         plan_price = PlanPrice.objects.select_related("plan").get(
             id=serializer.validated_data["plan_price_id"]
         )
-        base_url = request.build_absolute_uri("/")[:-1]
-        success_url = (
-            base_url
-            + reverse("billing-payment-success")
-            + "?session_id={CHECKOUT_SESSION_ID}"
-        )
-        cancel_url = serializer.validated_data["cancel_url"]
+        from django.conf import settings as django_settings
+        frontend_base = getattr(django_settings, "FRONTEND_BASE_URL", "http://localhost:3000")
+        success_url = f"{frontend_base}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{frontend_base}/payment/failed"
 
         result = SubscriptionService.create_checkout(
             request.user.business, plan_price, success_url, cancel_url

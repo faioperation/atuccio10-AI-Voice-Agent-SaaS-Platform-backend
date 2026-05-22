@@ -4,6 +4,7 @@ from datetime import timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from django.utils import timezone
+from django.db import close_old_connections
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ def send_meeting_reminders():
     Runs every minute. Finds bookings starting in 9–11 minutes and
     sends a one-time reminder. Handles midnight window crossover correctly.
     """
+    close_old_connections()
     if not _acquire_lock("notif:lock:meeting_reminders", timeout=55):
         return
 
@@ -111,6 +113,7 @@ def send_subscription_expiry_warnings():
     Runs every 6 hours. Sends expiry warnings at 10, 7, 3, 2, 1 day(s) before
     the subscription ends. Each day-level warning fires only once per subscription.
     """
+    close_old_connections()
     if not _acquire_lock("notif:lock:subscription_expiry", timeout=3600 * 5):
         return
 
@@ -172,6 +175,7 @@ def cleanup_old_notifications():
     """
     Runs once per day. Deletes notifications older than NOTIFICATION_RETENTION_DAYS.
     """
+    close_old_connections()
     if not _acquire_lock("notif:lock:cleanup", timeout=3600 * 23):
         return
 
@@ -196,6 +200,7 @@ def sync_crm_connections():
     Salesforce uses incremental sync (LastModifiedDate >= last_sync_at).
     Other CRMs rely on webhooks but this acts as a fallback safety net.
     """
+    close_old_connections()
     if not _acquire_lock("crm:lock:sync", timeout=270):
         return
     try:

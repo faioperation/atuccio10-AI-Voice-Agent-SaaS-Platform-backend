@@ -24,6 +24,9 @@ class BusinessSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
+MAX_PROFILE_IMAGE_SIZE_MB = 5
+
+
 class UserSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
     active_subscription = serializers.SerializerMethodField()
@@ -49,6 +52,13 @@ class UserSerializer(serializers.ModelSerializer):
             "roles",
             "active_subscription",
         ]
+
+    def validate_profile_image(self, value):
+        if value and value.size > MAX_PROFILE_IMAGE_SIZE_MB * 1024 * 1024:
+            raise serializers.ValidationError(
+                f"Profile image too large ({value.size // (1024 * 1024)} MB). Max: {MAX_PROFILE_IMAGE_SIZE_MB} MB."
+            )
+        return value
 
     def get_roles(self, obj):
         return [ur.role.name for ur in obj.user_roles.all()]

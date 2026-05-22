@@ -66,6 +66,14 @@ class CRMConnection(models.Model):
     synced_leads_count = models.IntegerField(default=0)
     last_sync_at = models.DateTimeField(null=True, blank=True)
 
+    # Polling interval (minutes) for CRMs without webhook support (Pipedrive, Salesforce)
+    # Range: 1–120 minutes. None means use global default (60 min).
+    interval_minutes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Polling interval in minutes for non-webhook CRMs (1–120). Leave blank to use default (60 min).",
+    )
+
     # Metadata
     raw_config = models.JSONField(default=dict, blank=True)  # Extra CRM-specific config
 

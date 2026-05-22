@@ -194,45 +194,60 @@ def cleanup_old_notifications():
         logger.exception("Error in cleanup_old_notifications")
 
 
+DEFAULT_SYNC_INTERVAL_MINUTES = 60  # fallback when sync_interval_minutes is not set
+
+# CRMs that use polling (no webhook push support)
+POLLING_CRMS = {"pipedrive", "salesforce"}
+
+
 def sync_crm_connections():
     """
-    Runs every 5 minutes. Polls all active CRM connections and syncs new/updated leads.
-    Salesforce uses incremental sync (LastModifiedDate >= last_sync_at).
-    Other CRMs rely on webhooks but this acts as a fallback safety net.
+    Runs every minute. For each active CRM connection:
+    - Webhook-based CRMs (HubSpot, Zoho, GHL): skipped (they push data via webhook).
+    - Polling CRMs (Pipedrive, Salesforce): synced if sync_interval_minutes has elapsed
+      since last_sync_at. Business admin can configure the interval per connection
+      via PATCH /api/crm/connections/<id>/sync-interval/ (range: 1–120 min,
+      default: 60 min).
     """
     close_old_connections()
-    if not _acquire_lock("crm:lock:sync", timeout=270):
+    if not _acquire_lock("crm:lock:sync", timeout=55):
         return
     try:
+        from django.utils import timezone as tz
         from apps.crm_integration.models import CRMConnection
         from apps.crm_integration.services import get_oauth_service
 
-        connections = CRMConnection.objects.filter(is_active=True).select_related(
-            "business"
-        )
+        now = tz.now()
+        connections = CRMConnection.objects.filter(
+            is_active=True,
+            crm_type__in=POLLING_CRMS,
+        ).select_related("business")
+
         for conn in connections:
+            interval = conn.interval_minutes or DEFAULT_SYNC_INTERVAL_MINUTES
+            # Skip if synced recently enough
+            if conn.last_sync_at and (now - conn.last_sync_at).total_seconds() < interval * 60:
+                continue
+
             try:
                 service = get_oauth_service(conn.crm_type, conn)
                 result = service.sync_leads_to_db()
                 if result.get("success") and (
                     result.get("saved", 0) or result.get("updated", 0)
                 ):
-                    logger.info(
-                        "CRM poll sync [%s] saved=%s updated=%s",
-                        conn.crm_type,
-                        result.get("saved"),
-                        result.get("updated"),
+                    print(
+                        f"[CRM SYNC] {conn.crm_type} connection={conn.id} "
+                        f"saved={result.get('saved')} updated={result.get('updated')}"
                     )
+                # Update last_sync_at regardless of result so we don't hammer on error
+                conn.last_sync_at = now
+                conn.save(update_fields=["last_sync_at", "updated_at"])
             except NotImplementedError:
                 pass
-            except Exception:
-                logger.exception(
-                    "CRM poll sync failed for connection %s (%s)",
-                    conn.id,
-                    conn.crm_type,
-                )
-    except Exception:
-        logger.exception("Error in sync_crm_connections")
+            except Exception as e:
+                print(f"[CRM SYNC] Failed for connection {conn.id} ({conn.crm_type}): {e}")
+    except Exception as e:
+        print(f"[CRM SYNC] Unexpected error: {e}")
 
 
 def start():
@@ -257,7 +272,7 @@ def start():
     )
     scheduler.add_job(
         sync_crm_connections,
-        trigger=IntervalTrigger(minutes=60),
+        trigger=IntervalTrigger(minutes=1),
         id="crm_sync",
         replace_existing=True,
     )

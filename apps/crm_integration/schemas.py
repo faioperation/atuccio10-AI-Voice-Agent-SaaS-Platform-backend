@@ -49,6 +49,44 @@ crm_leads_list_schema = dict(
     tags=[TAG],
 )
 
+crm_sync_interval_schema = dict(
+    operation_summary="Set CRM Sync Interval",
+    operation_description=(
+        "Set how often (in minutes) a polling-based CRM connection should sync leads.\n\n"
+        "**Only works for:** `pipedrive`, `salesforce` (webhook-based CRMs sync automatically).\n\n"
+        "**Min:** 60 minutes — values below this will be rejected.\n"
+        "**Max:** 1440 minutes (24 hours).\n"
+        "**Default:** 60 minutes (used when no interval has been set)."
+    ),
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["interval_minutes"],
+        properties={
+            "interval_minutes": openapi.Schema(
+                type=openapi.TYPE_INTEGER,
+                description="Sync interval in minutes (1–120). Default is 60.",
+                example=60,
+            ),
+        },
+    ),
+    responses={
+        200: openapi.Response(
+            "Interval updated",
+            schema=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    "detail": openapi.Schema(type=openapi.TYPE_STRING),
+                    "crm_type": openapi.Schema(type=openapi.TYPE_STRING),
+                    "interval_minutes": openapi.Schema(type=openapi.TYPE_INTEGER),
+                },
+            ),
+        ),
+        400: openapi.Response("Validation error"),
+        404: openapi.Response("Connection not found"),
+    },
+    tags=[TAG],
+)
+
 crm_webhook_schema = dict(
     operation_summary="CRM Webhook Receiver",
     operation_description="Endpoint for CRMs to POST new lead/contact events to",

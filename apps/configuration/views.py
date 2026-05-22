@@ -139,12 +139,44 @@ class KnowledgeFileListCreateView(APIView):
 
     @swagger_auto_schema(**schemas.knowledge_file_upload_schema)
     def post(self, request):
-        serializer = KnowledgeFileSerializer(
-            data=request.data, context={"request": request}
+        files = request.FILES.getlist("file")
+
+        # Single file: original behaviour (keeps backward compat)
+        if len(files) <= 1:
+            serializer = KnowledgeFileSerializer(
+                data=request.data, context={"request": request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save(business_id=request.user.business_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # Multiple files: validate + save each, return list
+        created = []
+        errors = []
+        for f in files:
+            data = request.data.copy()
+            data["file"] = f
+            # Use file name as default `name` if not provided
+            if not data.get("name"):
+                import os as _os
+                data["name"] = _os.path.splitext(f.name)[0]
+            serializer = KnowledgeFileSerializer(
+                data=data, context={"request": request}
+            )
+            if serializer.is_valid():
+                serializer.save(business_id=request.user.business_id)
+                created.append(serializer.data)
+            else:
+                errors.append({"file": f.name, "errors": serializer.errors})
+
+        if errors and not created:
+            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        resp_status = status.HTTP_201_CREATED if not errors else status.HTTP_207_MULTI_STATUS
+        return Response(
+            {"created": created, "errors": errors},
+            status=resp_status,
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save(business_id=request.user.business_id)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class KnowledgeFileDetailView(APIView):
@@ -168,4 +200,4 @@ class KnowledgeFileDetailView(APIView):
         if instance.file:
             instance.file.delete(save=False)
         instance.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "Knowledge file deleted successfully."}, status=status.HTTP_200_OK)

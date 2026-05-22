@@ -14,6 +14,7 @@ class CRMConnectionSerializer(serializers.ModelSerializer):
             "is_active",
             "synced_leads_count",
             "last_sync_at",
+            "interval_minutes",
             "created_at",
         ]
 

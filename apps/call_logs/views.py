@@ -1,4 +1,5 @@
-from rest_framework import generics, filters, permissions
+from rest_framework import generics, filters, permissions, status
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from apps.call_logs.models import CallLog
@@ -88,4 +89,6 @@ class CallLogDetailView(generics.RetrieveDestroyAPIView):
 
     @swagger_auto_schema(**schemas.call_log_delete_schema)
     def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+        instance = self.get_object()
+        instance.delete()
+        return Response({"detail": "Call log deleted successfully."}, status=status.HTTP_200_OK)

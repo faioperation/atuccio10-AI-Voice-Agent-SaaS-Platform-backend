@@ -5,10 +5,9 @@ from drf_yasg.utils import swagger_auto_schema
 from apps.call_logs.models import CallLog
 from apps.call_logs.serializers import CallLogListSerializer, CallLogDetailSerializer
 from apps.call_logs import schemas
-
-# Core imports for reusability
 from core.permissions import IsBusinessAdmin
 from core.pagination import DynamicPageNumberPagination
+
 
 class CallLogListCreateView(generics.ListCreateAPIView):
     pagination_class = DynamicPageNumberPagination
@@ -18,17 +17,13 @@ class CallLogListCreateView(generics.ListCreateAPIView):
         filters.OrderingFilter,
     ]
 
-    # Filtering fields
     filterset_fields = {
         "location": ["exact", "icontains"],
         "status": ["exact", "icontains"],
         "call_date_time": ["exact", "date", "gte", "lte"],
     }
-
-    # Searching fields
     search_fields = ["name", "phone_number", "location", "status"]
 
-    # Default ordering
     ordering_fields = ["call_date_time", "duration"]
     ordering = ["-call_date_time"]
 
@@ -55,12 +50,9 @@ class CallLogListCreateView(generics.ListCreateAPIView):
         return CallLog.objects.none()
 
     def perform_create(self, serializer):
-        # For AI/External service, business ID should be in the request body
-        # If user is authenticated (e.g. from dashboard), use their business
         if self.request.user.is_authenticated and self.request.user.business:
             serializer.save(business=self.request.user.business)
         else:
-            # Otherwise, just save what's in the serializer (business ID must be passed)
             serializer.save()
 
     @swagger_auto_schema(**schemas.call_log_list_schema)
@@ -71,17 +63,16 @@ class CallLogListCreateView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
+
 class CallLogDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = CallLogDetailSerializer
     permission_classes = [IsBusinessAdmin]
 
     def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
+        if getattr(self, "swagger_fake_view", False):
             return CallLog.objects.none()
         user = self.request.user
-        return CallLog.objects.select_related("business").filter(
-            business=user.business
-        )
+        return CallLog.objects.select_related("business").filter(business=user.business)
 
     @swagger_auto_schema(**schemas.call_log_detail_schema)
     def get(self, request, *args, **kwargs):
@@ -91,4 +82,6 @@ class CallLogDetailView(generics.RetrieveDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return Response({"detail": "Call log deleted successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Call log deleted successfully."}, status=status.HTTP_200_OK
+        )

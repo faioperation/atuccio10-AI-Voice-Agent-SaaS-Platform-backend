@@ -7,12 +7,21 @@ def _build_name(first, last):
 
 
 def upsert_lead(conn, crm_id, **fields):
-    _, created = SyncedLead.objects.update_or_create(
+    # On create → status defaults to "pending" so AI can pick it up.
+    # On update → never overwrite status (AI may have already set it to done/etc).
+    obj, created = SyncedLead.objects.get_or_create(
         crm_connection=conn,
         crm_lead_id=str(crm_id),
-        defaults={"business": conn.business, **fields},
+        defaults={"business": conn.business, "status": "pending", **fields},
     )
-    if created:
+    if not created:
+        # Update non-status fields only
+        update_fields = {k: v for k, v in fields.items() if k != "status"}
+        update_fields["business"] = conn.business
+        for attr, val in update_fields.items():
+            setattr(obj, attr, val)
+        obj.save(update_fields=list(update_fields.keys()) + ["updated_at"])
+    else:
         _notify_new_lead(conn, fields)
 
 

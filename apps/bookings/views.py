@@ -5,10 +5,9 @@ from drf_yasg.utils import swagger_auto_schema
 from apps.bookings.models import Booking
 from apps.bookings.serializers import BookingSerializer
 from apps.bookings import schemas
-
-# Core imports for reusability
 from core.permissions import IsBusinessAdmin
 from core.pagination import DynamicPageNumberPagination
+
 
 class BookingListCreateView(generics.ListCreateAPIView):
     serializer_class = BookingSerializer
@@ -19,16 +18,13 @@ class BookingListCreateView(generics.ListCreateAPIView):
         filters.OrderingFilter,
     ]
 
-    # Filtering fields
     filterset_fields = {
         "status": ["exact"],
         "meeting_date": ["exact", "gte", "lte"],
     }
 
-    # Searching fields
     search_fields = ["customer_name", "customer_email", "customer_phone"]
 
-    # Default ordering
     ordering_fields = ["meeting_date", "meeting_time", "created_at"]
     ordering = ["-meeting_date", "-meeting_time"]
 
@@ -50,11 +46,9 @@ class BookingListCreateView(generics.ListCreateAPIView):
         return Booking.objects.none()
 
     def perform_create(self, serializer):
-        # Handle business assignment for both authenticated and AI requests
         if self.request.user.is_authenticated and self.request.user.business:
             serializer.save(business=self.request.user.business)
         else:
-            # AI must pass business ID in the payload
             serializer.save()
 
     @swagger_auto_schema(**schemas.booking_list_schema)
@@ -65,17 +59,16 @@ class BookingListCreateView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
+
 class BookingDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = BookingSerializer
     permission_classes = [IsBusinessAdmin]
 
     def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
+        if getattr(self, "swagger_fake_view", False):
             return Booking.objects.none()
         user = self.request.user
-        return Booking.objects.select_related("business").filter(
-            business=user.business
-        )
+        return Booking.objects.select_related("business").filter(business=user.business)
 
     @swagger_auto_schema(**schemas.booking_detail_schema)
     def get(self, request, *args, **kwargs):
@@ -85,4 +78,6 @@ class BookingDetailView(generics.RetrieveDestroyAPIView):
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.delete()
-        return Response({"detail": "Booking deleted successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Booking deleted successfully."}, status=status.HTTP_200_OK
+        )

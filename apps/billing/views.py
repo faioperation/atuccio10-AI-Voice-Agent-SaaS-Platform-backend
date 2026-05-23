@@ -119,8 +119,13 @@ class SubscribeView(APIView):
             id=serializer.validated_data["plan_price_id"]
         )
         from django.conf import settings as django_settings
-        frontend_base = getattr(django_settings, "FRONTEND_BASE_URL", "http://localhost:3000")
-        success_url = f"{frontend_base}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+
+        frontend_base = getattr(
+            django_settings, "FRONTEND_BASE_URL", "http://localhost:3000"
+        )
+        success_url = (
+            f"{frontend_base}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+        )
         cancel_url = f"{frontend_base}/payment/failed"
 
         result = SubscriptionService.create_checkout(
@@ -192,7 +197,10 @@ class VerifySessionView(APIView):
 
     def _resolve(self, request, session_id):
         if not session_id:
-            return Response({"detail": "session_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "session_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         invoice_obj, stripe_invoice_url = SubscriptionService.resolve_payment_success(
             session_id, request.user
@@ -204,7 +212,9 @@ class VerifySessionView(APIView):
                 "session_id": session_id,
                 "invoice": invoice_data,
                 "stripe_invoice_url": (
-                    invoice_obj.stripe_invoice_url if invoice_obj else stripe_invoice_url
+                    invoice_obj.stripe_invoice_url
+                    if invoice_obj
+                    else stripe_invoice_url
                 ),
             },
             status=status.HTTP_200_OK,
@@ -237,7 +247,6 @@ class InvoiceDownloadView(APIView):
             business=request.user.business,
         )
 
-        # Fetch owner from invoice.business.owner_id (plain UUID, not FK)
         owner = None
         if invoice.business.owner_id:
             owner = (
@@ -257,7 +266,11 @@ class InvoiceDownloadView(APIView):
                     "currency": invoice.currency.upper(),
                     "status": invoice.status,
                     "paid_at": invoice.paid_at,
-                    "plan_expiry_date": invoice.subscription.current_period_end if invoice.subscription else None,
+                    "plan_expiry_date": (
+                        invoice.subscription.current_period_end
+                        if invoice.subscription
+                        else None
+                    ),
                     "created_at": invoice.created_at,
                     "snapshot_plan_name": invoice.snapshot_plan_name,
                     "snapshot_billing_cycle": invoice.snapshot_billing_cycle,

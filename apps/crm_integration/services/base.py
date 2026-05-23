@@ -31,12 +31,25 @@ class BaseOAuthService:
 
     def _save_lead(self, crm_lead_id, defaults):
         from apps.crm_integration.models import SyncedLead
-        _, created = SyncedLead.objects.update_or_create(
+
+        create_defaults = {
+            "business": self.crm_connection.business,
+            "status": "pending",  # new leads start as pending for AI to pick up
+            **defaults,
+        }
+        obj, created = SyncedLead.objects.get_or_create(
             crm_connection=self.crm_connection,
             crm_lead_id=str(crm_lead_id),
-            defaults={**defaults, "business": self.crm_connection.business},
+            defaults=create_defaults,
         )
-        if created:
+        if not created:
+            # Update non-status fields only — never overwrite AI-set statuses
+            update_fields = {k: v for k, v in defaults.items() if k != "status"}
+            update_fields["business"] = self.crm_connection.business
+            for attr, val in update_fields.items():
+                setattr(obj, attr, val)
+            obj.save(update_fields=list(update_fields.keys()) + ["updated_at"])
+        else:
             self._notify_new_lead(defaults)
         return created
 

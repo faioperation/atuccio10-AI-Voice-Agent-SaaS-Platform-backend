@@ -26,6 +26,14 @@ class Business(models.Model):
     human_agent_phone = models.CharField(max_length=20, null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
+    api_key = models.CharField(
+        max_length=80,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="Per-business API key for AI agent (X-API-Key header).",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

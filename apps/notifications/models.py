@@ -5,12 +5,15 @@ from django.conf import settings
 
 class Notification(models.Model):
     class NotificationType(models.TextChoices):
-        # System Admin receives these
+        # System Admin
         NEW_BUSINESS_REGISTERED = "new_business_registered", "New Business Registered"
         BUSINESS_PAYMENT = "business_payment", "Business Payment Received"
-        BUSINESS_SUPPORT_TICKET = "business_support_ticket", "Business Support Ticket Created"
+        BUSINESS_SUPPORT_TICKET = (
+            "business_support_ticket",
+            "Business Support Ticket Created",
+        )
 
-        # Business Admin receives these
+        # Business Admin
         NEW_CALL_LOG = "new_call_log", "New Call Log"
         NEW_LEAD = "new_lead", "New Lead"
         NEW_APPOINTMENT = "new_appointment", "New Appointment"

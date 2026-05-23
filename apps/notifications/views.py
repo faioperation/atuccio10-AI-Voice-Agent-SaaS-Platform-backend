@@ -29,9 +29,9 @@ class NotificationListView(generics.ListAPIView):
 @permission_classes([IsAuthenticated])
 def mark_notification_read(request, pk):
     """POST /api/notifications/{id}/read/"""
-    updated = Notification.objects.filter(
-        id=pk, recipient=request.user
-    ).update(is_read=True)
+    updated = Notification.objects.filter(id=pk, recipient=request.user).update(
+        is_read=True
+    )
     if not updated:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     return Response({"detail": "Marked as read."})
@@ -42,7 +42,9 @@ def mark_notification_read(request, pk):
 @permission_classes([IsAuthenticated])
 def mark_all_read(request):
     """POST /api/notifications/read-all/"""
-    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    Notification.objects.filter(recipient=request.user, is_read=False).update(
+        is_read=True
+    )
     return Response({"detail": "All notifications marked as read."})
 
 

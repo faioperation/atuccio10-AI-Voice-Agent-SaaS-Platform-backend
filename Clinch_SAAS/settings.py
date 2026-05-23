@@ -50,6 +50,7 @@ CUSTOM_APPS = [
     "apps.bookings",
     "apps.notifications",
     "apps.dashboard",
+    "apps.ai_integration",
 ]
 
 INSTALLED_APPS += CUSTOM_APPS
@@ -203,6 +204,9 @@ FRONTEND_DASHBOARD_URL = config(
 # Encryption key for sensitive config fields (Fernet)
 # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ENCRYPTION_KEY = config("ENCRYPTION_KEY")
+
+# AI Agent Base URL — backend pushes provision/config-update requests here
+AI_BASE_URL = config("AI_BASE_URL", default="")
 
 # Stripe Payment Integration
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")

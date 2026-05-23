@@ -68,7 +68,6 @@ class PlanWriteSerializer(serializers.ModelSerializer):
 
         plan = Plan.objects.create(**validated_data)
 
-        # Create prices
         from apps.billing.services.stripe_service import StripeService
 
         for price_data in prices_data:
@@ -78,7 +77,6 @@ class PlanWriteSerializer(serializers.ModelSerializer):
             except Exception:
                 pass
 
-        # Create features
         for feature_data in features_data:
             PlanFeature.objects.create(plan=plan, **feature_data)
 

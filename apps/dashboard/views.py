@@ -1,9 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
-
-from core.permissions import IsSystemAdmin, IsBusinessAdmin
+from core.permissions import IsBusinessAdmin
 from apps.dashboard.services import (
     get_leads_stats,
     get_calls_stats,

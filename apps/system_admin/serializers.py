@@ -43,6 +43,7 @@ class SystemAdminCreateSerializer(serializers.Serializer):
 
 class BusinessAdminListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list view - minimal data"""
+
     plan_start_date = serializers.SerializerMethodField()
     plan_end_date = serializers.SerializerMethodField()
     plan = serializers.SerializerMethodField()
@@ -107,6 +108,7 @@ class BusinessAdminListSerializer(serializers.ModelSerializer):
 
 class BusinessAdminDetailSerializer(serializers.ModelSerializer):
     """Full serializer for detail view"""
+
     plan_start_date = serializers.SerializerMethodField()
     plan_end_date = serializers.SerializerMethodField()
     plan = serializers.SerializerMethodField()
@@ -143,10 +145,16 @@ class BusinessAdminDetailSerializer(serializers.ModelSerializer):
         from apps.call_logs.models import CallLog
         from apps.bookings.models import Booking
 
-        # Use aggregate to get all counts in one query per model
-        leads = SyncedLead.objects.filter(business=business).aggregate(c=Count('id'))['c'] or 0
-        calls = CallLog.objects.filter(business=business).aggregate(c=Count('id'))['c'] or 0
-        bookings = Booking.objects.filter(business=business).aggregate(c=Count('id'))['c'] or 0
+        leads = (
+            SyncedLead.objects.filter(business=business).aggregate(c=Count("id"))["c"]
+            or 0
+        )
+        calls = (
+            CallLog.objects.filter(business=business).aggregate(c=Count("id"))["c"] or 0
+        )
+        bookings = (
+            Booking.objects.filter(business=business).aggregate(c=Count("id"))["c"] or 0
+        )
 
         return {"leads": leads, "calls": calls, "bookings": bookings}
 
@@ -156,17 +164,14 @@ class BusinessAdminDetailSerializer(serializers.ModelSerializer):
         sub = None
         if obj.business:
             from apps.billing.models import SubscriptionStatus
-            # Use prefetch cache if available, otherwise query
+
             prefetch_cache = getattr(obj.business, "_prefetched_objects_cache", {})
             if "subscriptions" in prefetch_cache:
-                # Filter from prefetch cache
                 subs = prefetch_cache["subscriptions"]
                 sub = next(
-                    (s for s in subs if s.status == SubscriptionStatus.ACTIVE),
-                    None
+                    (s for s in subs if s.status == SubscriptionStatus.ACTIVE), None
                 )
             else:
-                # Fallback to query if prefetch not available
                 sub = (
                     obj.business.subscriptions.filter(status=SubscriptionStatus.ACTIVE)
                     .select_related("plan_price__plan")
@@ -220,7 +225,6 @@ class BusinessAdminDetailSerializer(serializers.ModelSerializer):
         return 0
 
     def to_representation(self, instance):
-        # Cache stats before calling parent to_representation
         if instance.business:
             self._stats_cache = self._get_stats(instance.business)
         return super().to_representation(instance)

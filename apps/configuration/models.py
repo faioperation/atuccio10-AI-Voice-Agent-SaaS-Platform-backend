@@ -5,9 +5,6 @@ from apps.accounts.models import Business
 from core.encryption import encrypt_value, decrypt_value
 
 
-# APIConfig has been removed - use service-level configuration instead
-
-
 class TwilioConfig(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business = models.OneToOneField(

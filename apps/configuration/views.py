@@ -141,7 +141,6 @@ class KnowledgeFileListCreateView(APIView):
     def post(self, request):
         files = request.FILES.getlist("file")
 
-        # Single file: original behaviour (keeps backward compat)
         if len(files) <= 1:
             serializer = KnowledgeFileSerializer(
                 data=request.data, context={"request": request}
@@ -150,15 +149,14 @@ class KnowledgeFileListCreateView(APIView):
             serializer.save(business_id=request.user.business_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        # Multiple files: validate + save each, return list
         created = []
         errors = []
         for f in files:
             data = request.data.copy()
             data["file"] = f
-            # Use file name as default `name` if not provided
             if not data.get("name"):
                 import os as _os
+
                 data["name"] = _os.path.splitext(f.name)[0]
             serializer = KnowledgeFileSerializer(
                 data=data, context={"request": request}
@@ -172,7 +170,9 @@ class KnowledgeFileListCreateView(APIView):
         if errors and not created:
             return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        resp_status = status.HTTP_201_CREATED if not errors else status.HTTP_207_MULTI_STATUS
+        resp_status = (
+            status.HTTP_201_CREATED if not errors else status.HTTP_207_MULTI_STATUS
+        )
         return Response(
             {"created": created, "errors": errors},
             status=resp_status,
@@ -197,7 +197,22 @@ class KnowledgeFileDetailView(APIView):
                 {"detail": "Knowledge file not found.", "code": "not_found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        file_id = str(instance.id)
+        business = instance.business
         if instance.file:
             instance.file.delete(save=False)
         instance.delete()
-        return Response({"detail": "Knowledge file deleted successfully."}, status=status.HTTP_200_OK)
+
+        try:
+            from apps.ai_integration.provision_service import push_config_update
+
+            push_config_update(
+                business, {"knowledge_files": [{"id": file_id, "action": "remove"}]}
+            )
+        except Exception as e:
+            print(f"[AI] failed to push knowledge file removal: {e}")
+
+        return Response(
+            {"detail": "Knowledge file deleted successfully."},
+            status=status.HTTP_200_OK,
+        )

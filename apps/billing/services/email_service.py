@@ -12,20 +12,23 @@ def send_plan_welcome_email(subscription):
     business = subscription.business
     plan_price = subscription.plan_price
 
-    # Find the business admin user via business.users → user_roles
     try:
         from apps.accounts.models import UserRole
-        user_role = (
-            UserRole.objects
-            .select_related("user")
-            .get(user__business=business, role__name="business_admin")
+
+        user_role = UserRole.objects.select_related("user").get(
+            user__business=business, role__name="business_admin"
         )
         user = user_role.user
     except Exception:
-        logger.warning("send_plan_welcome_email: no business_admin found for business %s", business.id)
+        logger.warning(
+            "send_plan_welcome_email: no business_admin found for business %s",
+            business.id,
+        )
         return False
 
-    billing_cycle_display = "Monthly" if plan_price.billing_cycle == "monthly" else "Yearly"
+    billing_cycle_display = (
+        "Monthly" if plan_price.billing_cycle == "monthly" else "Yearly"
+    )
     expiry_date = (
         subscription.current_period_end.strftime("%B %d, %Y")
         if subscription.current_period_end
@@ -54,5 +57,7 @@ def send_plan_welcome_email(subscription):
         msg.send()
         return True
     except Exception as e:
-        logger.error("send_plan_welcome_email failed for business %s: %s", business.id, e)
+        logger.error(
+            "send_plan_welcome_email failed for business %s: %s", business.id, e
+        )
         return False

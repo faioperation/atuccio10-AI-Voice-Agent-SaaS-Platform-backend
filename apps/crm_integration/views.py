@@ -350,11 +350,13 @@ class CRMSyncIntervalView(APIView):
         conn.interval_minutes = interval
         conn.save(update_fields=["interval_minutes", "updated_at"])
 
-        return Response({
-            "detail": f"Sync interval updated to {interval} minute(s).",
-            "crm_type": conn.crm_type,
-            "interval_minutes": interval,
-        })
+        return Response(
+            {
+                "detail": f"Sync interval updated to {interval} minute(s).",
+                "crm_type": conn.crm_type,
+                "interval_minutes": interval,
+            }
+        )
 
 
 class SyncedLeadsView(APIView):

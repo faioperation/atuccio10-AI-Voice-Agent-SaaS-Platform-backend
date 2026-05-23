@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from apps.accounts.models import Business, Role, UserRole
 
 User = get_user_model()
+MAX_PROFILE_IMAGE_SIZE_MB = 5
 
 
 class BusinessSerializer(serializers.ModelSerializer):
@@ -22,9 +23,6 @@ class BusinessSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
-
-
-MAX_PROFILE_IMAGE_SIZE_MB = 5
 
 
 class UserSerializer(serializers.ModelSerializer):

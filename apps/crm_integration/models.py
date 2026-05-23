@@ -10,7 +10,7 @@ class EncryptedField(models.TextField):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.cipher_suite = Fernet(config('ENCRYPTION_KEY').encode())
+        self.cipher_suite = Fernet(config("ENCRYPTION_KEY").encode())
 
     def get_prep_value(self, value):
         if value is None:
@@ -32,16 +32,20 @@ class CRMConnection(models.Model):
     """Model to store user's CRM connection details"""
 
     CRM_CHOICES = (
-        ('hubspot', 'HubSpot'),
-        ('salesforce', 'Salesforce'),
-        ('zoho', 'Zoho CRM'),
-        ('ghl', 'GoHighLevel'),
-        ('pipedrive', 'Pipedrive'),
+        ("hubspot", "HubSpot"),
+        ("salesforce", "Salesforce"),
+        ("zoho", "Zoho CRM"),
+        ("ghl", "GoHighLevel"),
+        ("pipedrive", "Pipedrive"),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='crm_connections')
-    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='crm_connections')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="crm_connections"
+    )
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="crm_connections"
+    )
 
     crm_type = models.CharField(max_length=20, choices=CRM_CHOICES)
 
@@ -55,37 +59,37 @@ class CRMConnection(models.Model):
     # Webhook configuration
     webhook_url = models.CharField(max_length=500, null=True, blank=True)
     webhook_secret = models.CharField(max_length=255, null=True, blank=True)
-    webhook_id = models.CharField(max_length=255, null=True, blank=True)  # CRM এর webhook ID
+    webhook_id = models.CharField(
+        max_length=255, null=True, blank=True
+    )  # CRM এর webhook ID
 
     # CRM-specific info
-    crm_account_id = models.CharField(max_length=255, null=True, blank=True)  # CRM এর account/location ID
+    crm_account_id = models.CharField(
+        max_length=255, null=True, blank=True
+    )  # CRM এর account/location ID
     crm_user_email = models.EmailField(null=True, blank=True)
 
-    # Status
     is_active = models.BooleanField(default=True)
     synced_leads_count = models.IntegerField(default=0)
     last_sync_at = models.DateTimeField(null=True, blank=True)
 
-    # Polling interval (minutes) for CRMs without webhook support (Pipedrive, Salesforce)
-    # Range: 1–120 minutes. None means use global default (60 min).
     interval_minutes = models.PositiveIntegerField(
         null=True,
         blank=True,
         help_text="Polling interval in minutes for non-webhook CRMs (1–120). Leave blank to use default (60 min).",
     )
 
-    # Metadata
-    raw_config = models.JSONField(default=dict, blank=True)  # Extra CRM-specific config
+    raw_config = models.JSONField(default=dict, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('user', 'crm_type')
-        ordering = ['-created_at']
+        unique_together = ("user", "crm_type")
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', 'is_active']),
-            models.Index(fields=['business', 'crm_type']),
+            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["business", "crm_type"]),
         ]
 
     def __str__(self):
@@ -94,6 +98,7 @@ class CRMConnection(models.Model):
     def is_token_expired(self):
         """Check if access token is expired"""
         from django.utils import timezone
+
         if self.access_token_expires_at is None:
             return False
         return timezone.now() >= self.access_token_expires_at
@@ -103,36 +108,36 @@ class CRMWebhookLog(models.Model):
     """Model to log all webhook events from CRMs"""
 
     EVENT_TYPE_CHOICES = (
-        ('new_lead', 'New Lead'),
-        ('update_lead', 'Update Lead'),
-        ('delete_lead', 'Delete Lead'),
-        ('new_contact', 'New Contact'),
-        ('update_contact', 'Update Contact'),
-        ('other', 'Other Event'),
+        ("new_lead", "New Lead"),
+        ("update_lead", "Update Lead"),
+        ("delete_lead", "Delete Lead"),
+        ("new_contact", "New Contact"),
+        ("update_contact", "Update Contact"),
+        ("other", "Other Event"),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    crm_connection = models.ForeignKey(CRMConnection, on_delete=models.CASCADE, related_name='webhook_logs')
+    crm_connection = models.ForeignKey(
+        CRMConnection, on_delete=models.CASCADE, related_name="webhook_logs"
+    )
 
     event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
-    raw_data = models.JSONField()  # Full webhook payload
+    raw_data = models.JSONField()
 
-    # Processing status
     processed = models.BooleanField(default=False)
     processed_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
 
-    # CRM reference
     crm_event_id = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['crm_connection', 'processed']),
-            models.Index(fields=['created_at']),
+            models.Index(fields=["crm_connection", "processed"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def __str__(self):
@@ -143,28 +148,27 @@ class SyncedLead(models.Model):
     """Model to store leads synced from CRMs"""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='synced_leads')
-    crm_connection = models.ForeignKey(CRMConnection, on_delete=models.CASCADE, related_name='synced_leads')
+    business = models.ForeignKey(
+        Business, on_delete=models.CASCADE, related_name="synced_leads"
+    )
+    crm_connection = models.ForeignKey(
+        CRMConnection, on_delete=models.CASCADE, related_name="synced_leads"
+    )
 
-    # Lead reference
-    crm_lead_id = models.CharField(max_length=255)  # CRM এর lead ID
-    crm_object_type = models.CharField(max_length=50, default='lead')  # lead, contact, deal, etc
+    crm_lead_id = models.CharField(max_length=255)
+    crm_object_type = models.CharField(max_length=50, default="lead")
 
-    # Lead information
     name = models.CharField(max_length=511, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=30, null=True, blank=True)
     company = models.CharField(max_length=255, null=True, blank=True)
 
-    # Additional info
     source = models.CharField(max_length=255, null=True, blank=True)
     status = models.CharField(max_length=100, null=True, blank=True)
     stage = models.CharField(max_length=100, null=True, blank=True)
 
-    # Store full raw data from CRM
     raw_data = models.JSONField(default=dict)
 
-    # Sync info
     last_synced_at = models.DateTimeField(auto_now=True)
     is_duplicate = models.BooleanField(default=False)
 
@@ -172,22 +176,26 @@ class SyncedLead(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('crm_connection', 'crm_lead_id')
-        ordering = ['-created_at']
+        unique_together = ("crm_connection", "crm_lead_id")
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['business', 'email']),
-            models.Index(fields=['crm_connection', 'created_at']),
+            models.Index(fields=["business", "email"]),
+            models.Index(fields=["crm_connection", "created_at"]),
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.email})" if self.name else f"Lead {self.crm_lead_id}"
+        return (
+            f"{self.name} ({self.email})" if self.name else f"Lead {self.crm_lead_id}"
+        )
 
 
 class CRMSyncState(models.Model):
     """Track sync state for each CRM connection"""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    crm_connection = models.OneToOneField(CRMConnection, on_delete=models.CASCADE, related_name='sync_state')
+    crm_connection = models.OneToOneField(
+        CRMConnection, on_delete=models.CASCADE, related_name="sync_state"
+    )
 
     last_leads_sync = models.DateTimeField(null=True, blank=True)
     last_contacts_sync = models.DateTimeField(null=True, blank=True)
@@ -195,7 +203,6 @@ class CRMSyncState(models.Model):
     total_leads_synced = models.IntegerField(default=0)
     total_contacts_synced = models.IntegerField(default=0)
 
-    # Sync status
     is_syncing = models.BooleanField(default=False)
     last_sync_error = models.TextField(null=True, blank=True)
 

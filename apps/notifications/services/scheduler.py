@@ -40,8 +40,6 @@ def send_meeting_reminders():
         window_start_dt = now + timedelta(minutes=9)
         window_end_dt = now + timedelta(minutes=11)
 
-        # Use datetime comparison instead of date+time split
-        # This correctly handles midnight crossover (e.g. 23:55 + 11 min = 00:06 next day)
         bookings = _bookings_in_window(window_start_dt, window_end_dt)
 
         for booking in bookings:
@@ -84,16 +82,12 @@ def _bookings_in_window(window_start_dt, window_end_dt):
     """
     from apps.bookings.models import Booking
 
-    # If window stays within the same day, filter by date+time range directly
     if window_start_dt.date() == window_end_dt.date():
         return Booking.objects.filter(
             meeting_date=window_start_dt.date(),
             meeting_time__range=(window_start_dt.time(), window_end_dt.time()),
         ).select_related("business")
 
-    # Window crosses midnight: check both days separately
-    # Part 1: end of window_start_dt's day  (e.g. 23:54 → 23:59:59)
-    # Part 2: start of window_end_dt's day (e.g. 00:00 → 00:06)
     from django.db.models import Q
 
     return Booking.objects.filter(
@@ -131,12 +125,14 @@ def send_subscription_expiry_warnings():
         for sub in active_subs:
             days_left = (sub.current_period_end - now).days
 
-            # Auto-expire and disconnect CRM when period has ended
             if days_left < 0:
                 sub.status = "expired"
                 sub.save(update_fields=["status", "updated_at"])
                 from apps.crm_integration.models import CRMConnection
-                CRMConnection.objects.filter(business=sub.business, is_active=True).update(is_active=False)
+
+                CRMConnection.objects.filter(
+                    business=sub.business, is_active=True
+                ).update(is_active=False)
                 continue
 
             if days_left not in EXPIRY_WARNING_DAYS:
@@ -194,9 +190,7 @@ def cleanup_old_notifications():
         logger.exception("Error in cleanup_old_notifications")
 
 
-DEFAULT_SYNC_INTERVAL_MINUTES = 60  # fallback when sync_interval_minutes is not set
-
-# CRMs that use polling (no webhook push support)
+DEFAULT_SYNC_INTERVAL_MINUTES = 60
 POLLING_CRMS = {"pipedrive", "salesforce"}
 
 
@@ -225,8 +219,10 @@ def sync_crm_connections():
 
         for conn in connections:
             interval = conn.interval_minutes or DEFAULT_SYNC_INTERVAL_MINUTES
-            # Skip if synced recently enough
-            if conn.last_sync_at and (now - conn.last_sync_at).total_seconds() < interval * 60:
+            if (
+                conn.last_sync_at
+                and (now - conn.last_sync_at).total_seconds() < interval * 60
+            ):
                 continue
 
             try:
@@ -239,13 +235,14 @@ def sync_crm_connections():
                         f"[CRM SYNC] {conn.crm_type} connection={conn.id} "
                         f"saved={result.get('saved')} updated={result.get('updated')}"
                     )
-                # Update last_sync_at regardless of result so we don't hammer on error
                 conn.last_sync_at = now
                 conn.save(update_fields=["last_sync_at", "updated_at"])
             except NotImplementedError:
                 pass
             except Exception as e:
-                print(f"[CRM SYNC] Failed for connection {conn.id} ({conn.crm_type}): {e}")
+                print(
+                    f"[CRM SYNC] Failed for connection {conn.id} ({conn.crm_type}): {e}"
+                )
     except Exception as e:
         print(f"[CRM SYNC] Unexpected error: {e}")
 
@@ -272,7 +269,7 @@ def start():
     )
     scheduler.add_job(
         sync_crm_connections,
-        trigger=IntervalTrigger(minutes=1),
+        trigger=IntervalTrigger(minutes=10),
         id="crm_sync",
         replace_existing=True,
     )

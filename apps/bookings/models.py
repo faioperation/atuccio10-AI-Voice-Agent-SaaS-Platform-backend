@@ -8,7 +8,6 @@ class Booking(models.Model):
         Business, on_delete=models.CASCADE, related_name="bookings"
     )
 
-    # Meeting details
     meeting_date = models.DateField()
     meeting_time = models.TimeField()
     meeting_link = models.URLField(max_length=500, blank=True, null=True)
@@ -16,7 +15,6 @@ class Booking(models.Model):
         max_length=100, blank=True, null=True, help_text="Status decided by AI"
     )
 
-    # Customer information
     customer_name = models.CharField(max_length=255)
     customer_email = models.EmailField()
     customer_phone = models.CharField(max_length=20)

@@ -39,14 +39,13 @@ def get_leads_stats(business=None):
     if business:
         qs = qs.filter(business=business)
 
-    # Single aggregation query with proper aliases
     result = qs.aggregate(
         current_count=Count("id", filter=Q(created_at__gte=ranges["current_start"])),
         previous_count=Count("id", filter=Q(created_at__lt=ranges["current_start"])),
     )
 
-    current_count = result['current_count'] or 0
-    previous_count = result['previous_count'] or 0
+    current_count = result["current_count"] or 0
+    previous_count = result["previous_count"] or 0
     percentage = get_month_over_month_percentage(current_count, previous_count)
 
     return {
@@ -68,12 +67,16 @@ def get_calls_stats(business=None):
         qs = qs.filter(business=business)
 
     result = qs.aggregate(
-        current_count=Count("id", filter=Q(call_date_time__gte=ranges["current_start"])),
-        previous_count=Count("id", filter=Q(call_date_time__lt=ranges["current_start"])),
+        current_count=Count(
+            "id", filter=Q(call_date_time__gte=ranges["current_start"])
+        ),
+        previous_count=Count(
+            "id", filter=Q(call_date_time__lt=ranges["current_start"])
+        ),
     )
 
-    current_count = result['current_count'] or 0
-    previous_count = result['previous_count'] or 0
+    current_count = result["current_count"] or 0
+    previous_count = result["previous_count"] or 0
     percentage = get_month_over_month_percentage(current_count, previous_count)
 
     return {
@@ -98,20 +101,19 @@ def get_conversion_rate(business=None):
         leads_qs = leads_qs.filter(business=business)
         bookings_qs = bookings_qs.filter(business=business)
 
-    # Single aggregation per model with proper aliases
     lead_result = leads_qs.aggregate(
         current=Count("id", filter=Q(created_at__gte=ranges["current_start"])),
         previous=Count("id", filter=Q(created_at__lt=ranges["current_start"])),
     )
-    current_leads = lead_result['current'] or 0
-    previous_leads = lead_result['previous'] or 0
+    current_leads = lead_result["current"] or 0
+    previous_leads = lead_result["previous"] or 0
 
     booking_result = bookings_qs.aggregate(
         current=Count("id", filter=Q(created_at__gte=ranges["current_start"])),
         previous=Count("id", filter=Q(created_at__lt=ranges["current_start"])),
     )
-    current_bookings = booking_result['current'] or 0
-    previous_bookings = booking_result['previous'] or 0
+    current_bookings = booking_result["current"] or 0
+    previous_bookings = booking_result["previous"] or 0
 
     current_rate = (current_bookings / current_leads * 100) if current_leads > 0 else 0
     previous_rate = (
@@ -142,8 +144,8 @@ def get_appointments_stats(business=None):
         previous_count=Count("id", filter=Q(created_at__lt=ranges["current_start"])),
     )
 
-    current_count = result['current_count'] or 0
-    previous_count = result['previous_count'] or 0
+    current_count = result["current_count"] or 0
+    previous_count = result["previous_count"] or 0
     percentage = get_month_over_month_percentage(current_count, previous_count)
 
     return {
@@ -157,7 +159,6 @@ def get_call_logs_graph(business=None):
     """Get call logs grouped by day for this week and last week (optimized single query)"""
     now = timezone.now()
 
-    # This week (Monday to now)
     days_since_monday = now.weekday()
     this_week_start = now - timedelta(
         days=days_since_monday,
@@ -167,18 +168,15 @@ def get_call_logs_graph(business=None):
         microseconds=now.microsecond,
     )
 
-    # Last week (Monday to Sunday)
     last_week_end = this_week_start - timedelta(seconds=1)
     last_week_start = last_week_end - timedelta(days=6)
 
-    # Single query for both weeks
     qs = CallLog.objects.filter(
         call_date_time__gte=last_week_start, call_date_time__lte=now
     )
     if business:
         qs = qs.filter(business=business)
 
-    # Group by date
     daily_counts = dict(
         qs.annotate(date=TruncDate("call_date_time"))
         .values("date")

@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
 
-class ProductsConfig(AppConfig):
-    name = 'products'
+class ApiConfig(AppConfig):
+    name = "apps.api"
+    verbose_name = "API Router"
